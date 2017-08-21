@@ -1,0 +1,63 @@
+#!/bin/bash
+#
+# Script Name: backup_script
+#
+# Author: Franklin García
+# Date : Date of creation
+#
+# Description: The following script reads backup /path/to/file from a remote
+#              source and creates a gzip file and then remove the directory.
+#
+# Run Information: This script could run any day or hour all depends on your
+#                  space.
+#
+# Dependencies: mysql-client, postgres-client, ssh-client rsync and gzip
+#
+# Configuration: Please set the differents environments variables on your shell
+#                or bashrc file ie. appsdestination='/home/foo/destination'
+#
+
+mkdir -p $appsdestination/$(date +%F)-apps
+
+echo "Apps backup"
+rsync -aHAXxv --exclude='*.log' --numeric-ids --delete --progress -e "ssh -T -o Compression=no -x" user@example.com:public_html $appsdestination/web-site
+rsync -aHAXxv --exclude='*.log' --numeric-ids --delete --progress -e "ssh -T -o Compression=no -x" user@app1.example.com:app1 $appsdestination/app1
+rsync -aHAXxv --exclude='*.log' --numeric-ids --delete --progress -e "ssh -p 2345 -T -o Compression=no -x" user@:app2.example.com:/var/www/html/* $appsdestination/app2
+rsync -aHAXxv --exclude='*.log' --numeric-ids --delete --progress -e "ssh -p 4876 -T -o Compression=no -x" condor@app3.example.com:app3 $appsdestination/app3
+echo "Backup finished!"
+
+tar czf /home/foo/appsbackup/$(date +%F)-apps.tgz $appsdestination
+rm -rf $appsdestination
+
+# MySQL backups
+
+mkdir -p $msqldestination/$(date +%F)-msql
+
+echo "MySQL DBs backup..."
+for DB in `mysql -h mysql.example.com -e "show databases" -u user -ppasswd | grep -v Database`; do
+
+  if [ $DB == "some_db" ] || [ $DB == "some_db2" ]; then
+    echo "Skipping $DB database"
+    continue
+  else
+    mysqldump --host mysql.example.com -u user -ppasswd $DB > "$msqldestination/$DB.sql";
+  fi
+
+done
+
+tar czf /home/foo/databases_backup/$(date +%F)-msql.tgz $msqldestination
+rm -rf $msqldestination
+
+echo "MySQL DB backup finished!"
+
+# Postgres backup
+# For postgres configure .pgpass file on user's home that will execute the script
+
+mkdir -p $psqldestination
+
+pg_dumpall -U user -h postgres.example.com > $psqldestination/psql_pawadb
+
+tar czf /home/foo/databases_backup/$(date +%F)-psql.tgz $psqldestination
+rm -rf $psqldestination
+
+echo "PSQL DB backup finished!"
