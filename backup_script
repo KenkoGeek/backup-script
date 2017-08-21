@@ -13,9 +13,14 @@
 #
 # Dependencies: mysql-client, postgres-client, ssh-client rsync and gzip
 #
-# Configuration: Please set the differents environments variables on your shell
-#                or bashrc file ie. appsdestination='/home/foo/destination'
+# Configuration: Please set the differents environments variables on your bashrc
+#                or the script itself file
+#                ie. appsdestination='/home/foo/destination'
 #
+
+appsdestination=/home/foo/appsdestination
+msqldestination=/home/foo/msqldestination
+psqldestination=/home/foo/psqldestination
 
 mkdir -p $appsdestination/$(date +%F)-apps
 
@@ -23,11 +28,21 @@ echo "Apps backup"
 rsync -aHAXxv --exclude='*.log' --numeric-ids --delete --progress -e "ssh -T -o Compression=no -x" user@example.com:public_html $appsdestination/web-site
 rsync -aHAXxv --exclude='*.log' --numeric-ids --delete --progress -e "ssh -T -o Compression=no -x" user@app1.example.com:app1 $appsdestination/app1
 rsync -aHAXxv --exclude='*.log' --numeric-ids --delete --progress -e "ssh -p 2345 -T -o Compression=no -x" user@:app2.example.com:/var/www/html/* $appsdestination/app2
-rsync -aHAXxv --exclude='*.log' --numeric-ids --delete --progress -e "ssh -p 4876 -T -o Compression=no -x" condor@app3.example.com:app3 $appsdestination/app3
+rsync -aHAXxv --exclude='*.log' --numeric-ids --delete --progress -e "ssh -p 4876 -T -o Compression=no -x" user@app3.example.com:app3 $appsdestination/app3
 echo "Backup finished!"
 
-tar czf /home/foo/appsbackup/$(date +%F)-apps.tgz $appsdestination
-rm -rf $appsdestination
+if [ -e /home/foo/appsbackup ]; then
+
+  tar czf /home/foo/appsbackup/$(date +%F)-apps.tgz $appsdestination
+  rm -rf $appsdestination
+
+else
+
+  mkdir /home/foo/appsbackup
+  tar czf /home/foo/appsbackup/$(date +%F)-apps.tgz $appsdestination
+  rm -rf $appsdestination
+
+fi
 
 # MySQL backups
 
@@ -45,8 +60,19 @@ for DB in `mysql -h mysql.example.com -e "show databases" -u user -ppasswd | gre
 
 done
 
-tar czf /home/foo/databases_backup/$(date +%F)-msql.tgz $msqldestination
-rm -rf $msqldestination
+if [ -e /home/foo/dabases_backup ]; then
+
+  tar czf /home/foo/databases_backup/$(date +%F)-msql.tgz $msqldestination
+  rm -rf $msqldestination
+
+
+else
+
+  mkdir /home/foo/databases_backup
+  tar czf /home/foo/databases_backup/$(date +%F)-msql.tgz $msqldestination
+  rm -rf $msqldestination
+
+fi
 
 echo "MySQL DB backup finished!"
 
@@ -61,3 +87,10 @@ tar czf /home/foo/databases_backup/$(date +%F)-psql.tgz $psqldestination
 rm -rf $psqldestination
 
 echo "PSQL DB backup finished!"
+
+sleep 2
+
+echo "Removing backups files older than 30 days"
+
+find /home/foo/appsbackup/* -mtime +30 -exec rm {} \;
+find /home/foo/databases_backup/* -mtime +30 -exec rm {} \;
