@@ -60,7 +60,7 @@ for DB in `mysql -h mysql.example.com -e "show databases" -u user -ppasswd | gre
 
 done
 
-if [ -e /home/foo/dabases_backup ]; then
+if [ -e /home/foo/databases_backup ]; then
 
   tar czf /home/foo/databases_backup/$(date +%F)-msql.tgz $msqldestination
   rm -rf $msqldestination
