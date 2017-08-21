@@ -3,7 +3,7 @@
 # Script Name: backup_script
 #
 # Author: Franklin García
-# Date : Date of creation
+# Date : 08/21/2017
 #
 # Description: The following script reads backup /path/to/file from a remote
 #              source and creates a gzip file and then remove the directory.
